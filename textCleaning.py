@@ -1,15 +1,30 @@
 import nltk
 from nltk.corpus import stopwords
+from nltk.stem.porter import PorterStemmer
+from nltk.stem import WordNetLemmatizer
 import re
 import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+import tensorflow as tf
+from tensorflow import keras
+import string
 
 def textCleaning(line):
-    line.lower()
-    stop = stopwords.words('english')
-    line = " ".join([word for word in line.split() if word not in stop])
-    text = re.sub(r"(@\[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)|^rt|http.+?", "", line)
+    stemmer = PorterStemmer()
+    #lemmatizer = WordNetLemmatizer()
+    line = line.lower()
+    stop = set(stopwords.words('english'))
+    line = " ".join([stemmer.stem(word) for word in line.split() if word not in stop])
+    #line = " ".join([lemmatizer.lemmatize(word) for word in line.split() if word not in stop])
+    text = re.sub("@\S+", "", line)
+    text = re.sub("\$", "", text)
+    text = re.sub("https?:\/\/.*[\r\n]*", "", text)
+    text = re.sub("#", "", text)
+    punct = set(string.punctuation)
+    text = "".join([ch for ch in text if ch not in punct])
+
+    text = re.sub(r"(@\[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)|^rt|http.+?", "", text)
     return text
 
 #nltk.download('stopwords')
@@ -23,13 +38,30 @@ dataset = dataset[['text', 'target']]
 #dataset.plot(x='ids',y='target')
 #plt.show()
 shuffled_sample = dataset.sample(n=10)
-shuffled_sample.to_dict()
+shuffled_sample = shuffled_sample.set_index('text').to_dict()
 print(shuffled_sample)
-for index,row in shuffled_sample.iterrows():
-    print(textCleaning(row['text']))
+# vectorize_layer = keras.layers.TextVectorization(
+#     standardize=textCleaning,
+#     max_tokens=1000,
+#     output_mode='int',
+#     output_sequence_length=250)
+# vectorize_layer.adapt(shuffled_sample)
+# exit()
+inputs = list(shuffled_sample['target'].keys())
+labels = list(shuffled_sample['target'].values())
 
+print(inputs)
+print(labels)
+
+for index in range(len(inputs)):
+    print(textCleaning(inputs[index]))
+    inputs[index] = textCleaning(inputs[index])
+print(inputs)
+
+#countvectorizer = CountVectorizer(analyzer= 'word', stop_words='english')
 tfIdfVectorizer= TfidfVectorizer(analyzer='word', stop_words='english')
-tfIdf = tfIdfVectorizer.fit_transform(list(shuffled_sample.values()))
+#count_wm = countvectorizer.fit_transform(inputs)
+tfIdf = tfIdfVectorizer.fit_transform(inputs)
 tokens = tfIdfVectorizer.get_feature_names_out()
 print(pd.DataFrame(data=tfIdf.toarray(), columns=tokens))
 exit()
