@@ -1,17 +1,15 @@
-import nltk
+
 from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
 import re
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.feature_extraction.text import TfidfVectorizer
-import tensorflow as tf
-from tensorflow import keras
 import string
-from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 import numpy as np
-import sys
+import sklearn
+
 def textCleaning(line):
     stemmer = PorterStemmer()
     line = line.lower()
@@ -44,50 +42,33 @@ shuffled_sample = shuffled_sample.set_index('text').to_dict()
 inputs = list(shuffled_sample['target'].keys())
 labels = list(shuffled_sample['target'].values())
 
-# print(inputs)
-# print(labels)
 
 for index in range(len(inputs)):
     # print(textCleaning(inputs[index]))
     inputs[index] = textCleaning(inputs[index])
 # print(inputs)
 
-#countvectorizer = CountVectorizer(analyzer= 'word', stop_words='english')
 tfIdfVectorizer= TfidfVectorizer(analyzer='word', stop_words='english')
-#count_wm = countvectorizer.fit_transform(inputs)
 tfIdf = tfIdfVectorizer.fit_transform(inputs)
 tokens = tfIdfVectorizer.get_feature_names_out()
 data = pd.DataFrame(data=tfIdf.toarray(), columns=tokens)
-# data['label'] = labels
-# print(data)
-# data = data.values.tolist()
-# data = np.stack(data)
 x = data.to_numpy()
 print(data.shape)
 y = np.stack(labels)
 y[y > 1] = 1
-# np.set_printoptions(threshold=sys.maxsize)
-# print(y)
-# exit()
-# print(x.shape)
-# print(y.shape)
-# exit()
+
 
 train_inp = x[:int(num_sample*0.8)]
 train_label = y[:int(num_sample*0.8)]
 valid_inp = x[int(num_sample*0.8):]
 valid_label = y[int(num_sample*0.8):]
-# print(train_inp.shape)
-# print(valid_label)
-model = RandomForestClassifier(max_depth = 20, n_estimators= 500)
+
+model = RandomForestClassifier(n_estimators= 500)
 model.fit(train_inp, train_label)
 predictions = model.predict(valid_inp)
-results = (predictions == valid_label)
-print(results.astype(int).mean())
+accuracy = sklearn.metrics.accuracy_score(valid_label, predictions)
+# results = (predictions == valid_label)
+print(accuracy)
 
-
-
-#train test split, scikit learn random forest classifier
-exit()
 
 #venv\Scripts\activate.bat to activate venv
